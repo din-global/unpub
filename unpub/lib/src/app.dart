@@ -38,6 +38,13 @@ class App {
   /// A forward proxy uri
   final Uri? proxy_origin;
 
+  /// An opaque token used for rudimentary authentication
+  /// for package uploading
+  /// 
+  /// If this is not null, the upload request must pass this
+  /// in the authentication header as 'Bearer [opaqueToken]'
+  final String? opaqueToken;
+
   /// validate if the package can be published
   ///
   /// for more details, see: https://github.com/bytedance/unpub#package-validator
@@ -52,6 +59,7 @@ class App {
     this.overrideUploaderEmail,
     this.uploadValidator,
     this.proxy_origin,
+    this.opaqueToken,
   });
 
   static shelf.Response _okWithJson(Map<String, dynamic> data) =>
@@ -89,6 +97,16 @@ class App {
     return req.requestedUri.resolve(reference).toString();
   }
 
+  /// validate the bearer token in the request headers against the stored token
+  Future<void> _validateOpaqueToken(shelf.Request request) async {
+    if (opaqueToken == null) return;
+
+    final receivedToken = request.headers[HttpHeaders.authorizationHeader];
+
+    if (receivedToken == null || receivedToken.split(' ').last != opaqueToken) {
+      throw 'invalid or missing opaque token';
+    }
+  }
 
   Future<HttpServer> serve([String host = '0.0.0.0', int port = 4000]) async {
     var handler = const shelf.Pipeline()
@@ -210,6 +228,8 @@ class App {
   @Route.post('/api/packages/versions/newUpload')
   Future<shelf.Response> upload(shelf.Request req) async {
     try {
+      await _validateOpaqueToken(req);
+
       /// TODO: get bot email from releases
       var uploader = 'actions@din.global';
 
