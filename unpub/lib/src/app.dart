@@ -136,8 +136,7 @@ class App {
     var name = item.pubspec['name'] as String;
     var version = item.version;
     return {
-      'archive_url':
-          _resolveUrl(req, '/packages/$name/versions/$version.tar.gz'),
+      'archive_url': _resolveUrl(req, '/packages/$name/versions/$version.tar.gz'),
       'pubspec': item.pubspec,
       'version': version,
     };
