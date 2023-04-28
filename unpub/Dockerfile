@@ -17,5 +17,8 @@ ENV DATABASE mongodb://host.docker.internal:27017/dart_pub
 
 COPY --from=build /runtime/ /
 COPY --from=build /app/bin/unpub /unpub
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
+RUN chmod +x /wait
 
-CMD ["sh", "-c", "/unpub --host $HOST --port $PORT --database $DATABASE"] 
+CMD /wait && /unpub --host $HOST --port $PORT --database $DATABASE
+# CMD ["sh", "-c", "/unpub --host $HOST --port $PORT --database $DATABASE"] 
