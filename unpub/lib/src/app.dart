@@ -31,8 +31,6 @@ class App {
   /// upstream url, default: https://pub.dev
   final String upstream;
 
-  /// http(s) proxy to call googleapis (to get uploader email)
-  final String? googleapisProxy;
   final String? overrideUploaderEmail;
 
   /// A forward proxy uri
@@ -40,7 +38,7 @@ class App {
 
   /// An opaque token used for rudimentary authentication
   /// for package uploading
-  /// 
+  ///
   /// If this is not null, the upload request must pass this
   /// in the authentication header as 'Bearer [opaqueToken]'
   final String? opaqueToken;
@@ -55,7 +53,6 @@ class App {
     required this.metaStore,
     required this.packageStore,
     this.upstream = 'https://pub.dev',
-    this.googleapisProxy,
     this.overrideUploaderEmail,
     this.uploadValidator,
     this.proxy_origin,
@@ -84,7 +81,6 @@ class App {
           'error': {'message': message}
         }),
       );
-
 
   String _resolveUrl(shelf.Request req, String reference) {
     if (proxy_origin != null) {
