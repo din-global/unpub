@@ -3,9 +3,6 @@ import 'dart:io';
 import 'package:collection/collection.dart' show IterableExtension;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
-import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
-import 'package:googleapis/oauth2/v2.dart';
 import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:shelf_cors_headers/shelf_cors_headers.dart';
@@ -34,12 +31,17 @@ class App {
   /// upstream url, default: https://pub.dev
   final String upstream;
 
-  /// http(s) proxy to call googleapis (to get uploader email)
-  final String? googleapisProxy;
   final String? overrideUploaderEmail;
 
   /// A forward proxy uri
   final Uri? proxy_origin;
+
+  /// An opaque token used for rudimentary authentication
+  /// for package uploading
+  ///
+  /// If this is not null, the upload request must pass this
+  /// in the authentication header as 'Bearer [opaqueToken]'
+  final String? opaqueToken;
 
   /// validate if the package can be published
   ///
@@ -51,10 +53,10 @@ class App {
     required this.metaStore,
     required this.packageStore,
     this.upstream = 'https://pub.dev',
-    this.googleapisProxy,
     this.overrideUploaderEmail,
     this.uploadValidator,
     this.proxy_origin,
+    this.opaqueToken,
   });
 
   static shelf.Response _okWithJson(Map<String, dynamic> data) =>
@@ -80,8 +82,6 @@ class App {
         }),
       );
 
-  http.Client? _googleapisClient;
-
   String _resolveUrl(shelf.Request req, String reference) {
     if (proxy_origin != null) {
       return proxy_origin!.resolve(reference).toString();
@@ -93,28 +93,15 @@ class App {
     return req.requestedUri.resolve(reference).toString();
   }
 
-  Future<String> _getUploaderEmail(shelf.Request req) async {
-    if (overrideUploaderEmail != null) return overrideUploaderEmail!;
+  /// validate the bearer token in the request headers against the stored token
+  Future<void> _validateOpaqueToken(shelf.Request request) async {
+    if (opaqueToken == null) return;
 
-    var authHeader = req.headers[HttpHeaders.authorizationHeader];
-    if (authHeader == null) throw 'missing authorization header';
+    final receivedToken = request.headers[HttpHeaders.authorizationHeader];
 
-    var token = authHeader.split(' ').last;
-
-    if (_googleapisClient == null) {
-      if (googleapisProxy != null) {
-        _googleapisClient = IOClient(HttpClient()
-          ..findProxy = (url) => HttpClient.findProxyFromEnvironment(url,
-              environment: {"https_proxy": googleapisProxy!}));
-      } else {
-        _googleapisClient = http.Client();
-      }
+    if (receivedToken == null || receivedToken.split(' ').last != opaqueToken) {
+      throw 'invalid or missing opaque token';
     }
-
-    var info =
-        await Oauth2Api(_googleapisClient!).tokeninfo(accessToken: token);
-    if (info.email == null) throw 'fail to get google account email';
-    return info.email!;
   }
 
   Future<HttpServer> serve([String host = '0.0.0.0', int port = 4000]) async {
@@ -237,7 +224,10 @@ class App {
   @Route.post('/api/packages/versions/newUpload')
   Future<shelf.Response> upload(shelf.Request req) async {
     try {
-      var uploader = await _getUploaderEmail(req);
+      await _validateOpaqueToken(req);
+
+      /// TODO: get bot email from releases
+      var uploader = 'actions@din.global';
 
       var contentType = req.headers['content-type'];
       if (contentType == null) throw 'invalid content type';
@@ -361,12 +351,8 @@ class App {
   Future<shelf.Response> addUploader(shelf.Request req, String name) async {
     var body = await req.readAsString();
     var email = Uri.splitQueryString(body)['email']!; // TODO: null
-    var operatorEmail = await _getUploaderEmail(req);
     var package = await metaStore.queryPackage(name);
 
-    if (package?.uploaders?.contains(operatorEmail) == false) {
-      return _badRequest('no permission', status: HttpStatus.forbidden);
-    }
     if (package?.uploaders?.contains(email) == true) {
       return _badRequest('email already exists');
     }
@@ -379,13 +365,9 @@ class App {
   Future<shelf.Response> removeUploader(
       shelf.Request req, String name, String email) async {
     email = Uri.decodeComponent(email);
-    var operatorEmail = await _getUploaderEmail(req);
     var package = await metaStore.queryPackage(name);
 
     // TODO: null
-    if (package?.uploaders?.contains(operatorEmail) == false) {
-      return _badRequest('no permission', status: HttpStatus.forbidden);
-    }
     if (package?.uploaders?.contains(email) == false) {
       return _badRequest('email not uploader');
     }
