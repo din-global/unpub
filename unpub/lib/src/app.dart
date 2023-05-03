@@ -227,7 +227,7 @@ class App {
       await _validateOpaqueToken(req);
 
       /// TODO: get bot email from releases
-      var uploader = 'actions@din.global';
+      var uploader = 'github-bot@din.global';
 
       var contentType = req.headers['content-type'];
       if (contentType == null) throw 'invalid content type';
