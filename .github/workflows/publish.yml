@@ -1,6 +1,6 @@
 name: Push on main
 on:
-  workflow_call:
+  workflow_dispatch:
 
 jobs:
     build:
@@ -27,18 +27,15 @@ jobs:
             id: login-ecr
             uses: aws-actions/amazon-ecr-login@v1
     
-          - name: Build
-            run: dart pub get
+          # - name: Build
+          #   run: dart pub get
 
-        #   - name: Calculate timestamp tag
-        #     id: timestamptagcalc
-        #     env:
-        #       BUILD_INFO_FILE: 'server/build/resources/main/META-INF/build-info.properties'
-        #     run: |
-        #       # Create tag. Note this doesn't completely follow semver because docker tags do not take a + sign
-        #       ts=$([ -e $BUILD_INFO_FILE ] && echo ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:timestamp-$(grep "build.time=" $BUILD_INFO_FILE | cut -d"=" -f2 | tr -d '\\:.-') || echo "");
-        #       echo $ts
-        #       echo "tag=$ts" >> $GITHUB_OUTPUT
+          - name: Calculate timestamp tag
+            id: timestamptagcalc
+            run: |
+              ts=$(date +%s)
+              echo $ts
+              echo "tag=$ts" >> $GITHUB_OUTPUT
     
           - name: Build and push images to ECR
             uses: docker/build-push-action@v4
@@ -50,4 +47,4 @@ jobs:
                 ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:latest
                 ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:gitcommit-${{ github.sha }}
                 ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:gitrun-${{ github.run_id }}
-            # ${{ steps.timestamptagcalc.outputs.tag }}
+                ${{ steps.timestamptagcalc.outputs.tag }}
