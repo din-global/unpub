@@ -1,7 +1,10 @@
 name: Publish to ECR
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
-
+  
+  
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -35,7 +38,7 @@ jobs:
           - name: Build and push images to ECR
             uses: docker/build-push-action@v4
             with:
-              context: server
+              context: unpub
               platforms: linux/amd64,linux/arm64
               push: true
               tags: |
@@ -43,3 +46,4 @@ jobs:
                 ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:gitcommit-${{ github.sha }}
                 ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:gitrun-${{ github.run_id }}
                 ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:timestamp-${{ steps.timestamptagcalc.outputs.tag }}
+              
