@@ -1,4 +1,4 @@
-name: Push on main
+name: Publish to ECR
 on:
   workflow_dispatch:
 
@@ -7,8 +7,6 @@ jobs:
         runs-on: ubuntu-latest
         steps:
           - uses: actions/checkout@v3
-            with:
-              fetch-depth: 0
     
           - name: Set up QEMU
             uses: docker/setup-qemu-action@v2
@@ -26,9 +24,6 @@ jobs:
           - name: Login to Amazon ECR
             id: login-ecr
             uses: aws-actions/amazon-ecr-login@v1
-    
-          # - name: Build
-          #   run: dart pub get
 
           - name: Calculate timestamp tag
             id: timestamptagcalc
@@ -43,8 +38,4 @@ jobs:
               context: server
               platforms: linux/amd64,linux/arm64
               push: true
-              tags: |
-                ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:latest
-                ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:gitcommit-${{ github.sha }}
-                ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:gitrun-${{ github.run_id }}
-                ${{ steps.timestamptagcalc.outputs.tag }}
+              tags: ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:timestamp-${{ steps.timestamptagcalc.outputs.tag }}
