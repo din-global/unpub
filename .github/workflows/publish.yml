@@ -1,0 +1,49 @@
+name: Publish to ECR
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+  
+  
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+    
+          - name: Set up QEMU
+            uses: docker/setup-qemu-action@v2
+    
+          - name: Set up Docker Buildx
+            uses: docker/setup-buildx-action@v2
+        
+          - name: Configure AWS Credentials
+            uses: aws-actions/configure-aws-credentials@v2
+            with:
+              aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+              aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              aws-region: ${{ secrets.AWS_REGION }}
+    
+          - name: Login to Amazon ECR
+            id: login-ecr
+            uses: aws-actions/amazon-ecr-login@v1
+
+          - name: Calculate timestamp tag
+            id: timestamptagcalc
+            run: |
+              ts=$(date +%s)
+              echo $ts
+              echo "tag=$ts" >> $GITHUB_OUTPUT
+    
+          - name: Build and push images to ECR
+            uses: docker/build-push-action@v4
+            with:
+              context: unpub
+              platforms: linux/amd64,linux/arm64
+              push: true
+              tags: |
+                ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:latest
+                ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:gitcommit-${{ github.sha }}
+                ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:gitrun-${{ github.run_id }}
+                ${{steps.login-ecr.outputs.registry}}/${{github.repository}}:timestamp-${{ steps.timestamptagcalc.outputs.tag }}
+              
