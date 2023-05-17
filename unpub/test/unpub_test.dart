@@ -267,6 +267,33 @@ main() {
     });
   });
 
+  group('remove package', () {
+    setUpAll(() async {
+      await _cleanUpDb();
+      _server = await createServer(email0);
+      await pubPublish(package0, '0.0.1');
+    });
+
+    tearDownAll(() async {
+      await _server.close();
+    });
+
+    test('remove existing package', () async {
+      final initialRes = await getVersions(package0);
+      expect(initialRes.statusCode, HttpStatus.ok);
+
+      await removePackage(package0);
+
+      final response = await getVersions(package0);
+      expect(response.statusCode, HttpStatus.notFound);
+    });
+
+    test('remove non-existant package', () async {
+      final res = await removePackage(notExistingPacakge);
+      expect(res.statusCode, HttpStatus.badRequest);
+    });
+  });
+
   group('uploader', () {
     setUpAll(() async {
       await _cleanUpDb();
