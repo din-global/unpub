@@ -51,6 +51,9 @@ class App {
   final Future<void> Function(
       Map<String, dynamic> pubspec, String uploaderEmail)? uploadValidator;
 
+  /// start time of the server
+  final DateTime startTime;
+
   App({
     required this.metaStore,
     required this.packageStore,
@@ -59,7 +62,7 @@ class App {
     this.uploadValidator,
     this.proxy_origin,
     this.opaqueToken,
-  });
+  }) : startTime = DateTime.now();
 
   static shelf.Response _okWithJson(Map<String, dynamic> data) =>
       shelf.Response.ok(
@@ -379,6 +382,25 @@ class App {
     return _successMessage('uploader removed');
   }
 
+  @Route.delete('/api/packages/<name>')
+  Future<shelf.Response> removePackage(shelf.Request req, String name) async {
+    try {
+      await _validateOpaqueToken(req);
+
+      final package = await metaStore.queryPackage(name);
+
+      if (package == null) {
+        return _badRequest('package not found');
+      }
+
+      /// TODO: Throw exception if other packages depend on this
+      await metaStore.removePackage(name);
+      return _successMessage('package removed');
+    } catch (err) {
+      return _badRequest(err.toString());
+    }
+  }
+
   @Route.get('/webapi/packages')
   Future<shelf.Response> getPackages(shelf.Request req) async {
     var params = req.requestedUri.queryParameters;
@@ -510,8 +532,17 @@ class App {
   @Route.get('/packages/<name>')
   @Route.get('/packages/<name>/versions/<version>')
   Future<shelf.Response> indexHtml(shelf.Request req) async {
-    return shelf.Response.ok(index_html.content,
+    final updatedHtmlContent = _addStartTimeInHtml();
+
+    return shelf.Response.ok(updatedHtmlContent,
         headers: {HttpHeaders.contentTypeHeader: ContentType.html.mimeType});
+  }
+
+  /// Update the title in HTML to include server start time
+  String _addStartTimeInHtml() {
+    final updatedHtml = index_html.content
+        .replaceFirst('<title>Unpub', '<title>Unpub $startTime');
+    return updatedHtml;
   }
 
   @Route.get('/main.dart.js')

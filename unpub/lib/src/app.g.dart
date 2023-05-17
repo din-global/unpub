@@ -49,6 +49,11 @@ Router _$AppRouter(App service) {
     service.removeUploader,
   );
   router.add(
+    'DELETE',
+    r'/api/packages/<name>',
+    service.removePackage,
+  );
+  router.add(
     'GET',
     r'/webapi/packages',
     service.getPackages,
