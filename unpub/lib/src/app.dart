@@ -394,7 +394,14 @@ class App {
       }
 
       /// TODO: Throw exception if other packages depend on this
-      await metaStore.removePackage(name);
+
+
+      /// Remove files
+      final versions = package.versions.map((v) => v.version).toList();
+      await packageStore.remove(package.name, versions);
+
+      /// Remove metadata (after removing the package tars)
+      await metaStore.removePackage(package.name);
       return _successMessage('package removed');
     } catch (err) {
       return _badRequest(err.toString());

@@ -12,4 +12,6 @@ abstract class PackageStore {
   }
 
   Future<void> upload(String name, String version, List<int> content);
+
+  Future<void> remove(String name, List<String> versions);
 }

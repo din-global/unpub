@@ -25,4 +25,10 @@ class FileStore extends PackageStore {
   Stream<List<int>> download(String name, String version) {
     return _getTarballFile(name, version).openRead();
   }
+
+  @override
+  Future<void> remove(String name, List<String> versions) async {
+    final files = versions.map((v) => _getTarballFile(name, v)).toList();
+    await Future.wait(files.map((e) => e.delete()));
+  }
 }
