@@ -19,6 +19,10 @@ import 'utils.dart';
 import 'static/index.html.dart' as index_html;
 import 'static/main.dart.js.dart' as main_dart_js;
 
+import 'flutter/index.html.dart' as unpublish_html;
+import 'flutter/main.dart.js.dart' as unpublish_js;
+import 'flutter/flutter.js.dart' as flutter_js;
+
 part 'app.g.dart';
 
 class App {
@@ -141,6 +145,25 @@ class App {
   }
 
   Router get router => _$AppRouter(this);
+
+  @Route.get('/api/packages')
+  Future<shelf.Response> getPackageNames(shelf.Request req) async {
+    final result = await metaStore.queryPackages();
+
+    /// Sort versions of each package
+    result.packages.forEach((p) {
+      p.versions.sort((a, b) {
+        return semver.Version.prioritize(
+            semver.Version.parse(a.version), semver.Version.parse(b.version));
+      });
+    });
+
+    final names = result.packages
+        .map((p) => {'name': p.name, 'version': p.versions.last.version})
+        .toList();
+
+    return _okWithJson({'packages': names});
+  }
 
   @Route.get('/api/packages/<name>')
   Future<shelf.Response> getVersions(shelf.Request req, String name) async {
@@ -395,7 +418,6 @@ class App {
 
       /// TODO: Throw exception if other packages depend on this
 
-
       /// Remove files
       final versions = package.versions.map((v) => v.version).toList();
       await packageStore.remove(package.name, versions);
@@ -543,6 +565,26 @@ class App {
 
     return shelf.Response.ok(updatedHtmlContent,
         headers: {HttpHeaders.contentTypeHeader: ContentType.html.mimeType});
+  }
+
+  /// Return Flutter web app
+  @Route.get('/delete')
+  @Route.get('/delete/')
+  Future<shelf.Response> flutterHtml(shelf.Request req) async {
+    return shelf.Response.ok(unpublish_html.content,
+        headers: {HttpHeaders.contentTypeHeader: ContentType.html.mimeType});
+  }
+
+  @Route.get('/delete/main.dart.js')
+  Future<shelf.Response> unpublishJs(shelf.Request req) async {
+    return shelf.Response.ok(unpublish_js.content,
+        headers: {HttpHeaders.contentTypeHeader: 'text/javascript'});
+  }
+
+  @Route.get('/delete/flutter.js')
+  Future<shelf.Response> FlutterJs(shelf.Request req) async {
+    return shelf.Response.ok(flutter_js.content,
+        headers: {HttpHeaders.contentTypeHeader: 'text/javascript'});
   }
 
   /// Update the title in HTML to include server start time

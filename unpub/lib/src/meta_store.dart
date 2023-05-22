@@ -12,9 +12,9 @@ abstract class MetaStore {
   void increaseDownloads(String name, String version);
 
   Future<UnpubQueryResult> queryPackages({
-    required int size,
-    required int page,
-    required String sort,
+    int? size,
+    int? page,
+    String? sort,
     String? keyword,
     String? uploader,
     String? dependency,
