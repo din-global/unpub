@@ -48,6 +48,11 @@ Future<ProcessResult> pubPublish(String name, String version) {
       environment: {'PUB_HOSTED_URL': pubHostedUrl});
 }
 
+Future<http.Response> removePackage(String name){
+  final encodedName = Uri.encodeComponent(name);
+  return http.delete(baseUri.resolve('/api/packages/$encodedName'));
+}
+
 Future<ProcessResult> pubUploader(String name, String operation, String email) {
   assert(['add', 'remove'].contains(operation), 'operation error');
 

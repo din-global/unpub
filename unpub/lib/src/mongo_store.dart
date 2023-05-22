@@ -101,4 +101,9 @@ class MongoStore extends MetaStore {
 
     return _queryPackagesBySelector(selector);
   }
+
+  @override
+  removePackage(String name) async {
+    await db.collection(packageCollection).deleteOne(_selectByName(name));
+  }
 }
