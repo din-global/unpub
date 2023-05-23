@@ -73,16 +73,26 @@ class MongoStore extends MetaStore {
 
   @override
   Future<UnpubQueryResult> queryPackages({
-    required size,
-    required page,
-    required sort,
+    size,
+    page,
+    sort,
     keyword,
     uploader,
     dependency,
   }) {
-    var selector =
-        where.sortBy(sort, descending: true).limit(size).skip(page * size);
+    /// [page] cannot be provided without [size]
+    assert(page == null || size != null);
 
+    var selector = SelectorBuilder();
+    if (sort != null) {
+      selector = selector.sortBy(sort, descending: true);
+    }
+    if (size != null) {
+      selector = selector.limit(size);
+    }
+    if (page != null) {
+      selector.skip(page * size!);
+    }
     if (keyword != null) {
       selector = selector.match('name', '.*$keyword.*');
     }

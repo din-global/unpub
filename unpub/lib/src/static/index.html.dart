@@ -1696,11 +1696,35 @@ const content = """<!DOCTYPE html>
         background-color: transparent;
         border: 0;
       }
+      .banner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            // background-color: #f5f5f5;
+            height: 40px;
+        }
+
+        .banner-text {
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: underline;
+            color: #00579b;
+        }
+
+        .banner-link {
+            text-decoration: none;
+        }
     </style>
     <link rel="icon" type="image/png" href="https://pub.dev/favicon.ico" />
     <script defer src="main.dart.js"></script>
   </head>
   <body>
+        <div class="banner">
+   <a href="/delete" class="banner-link">
+            <span class="banner-text">Hey! Wanna remove some packages?</span>
+                </a>
+
+        </div>
     <my-app>Loading...</my-app>
   </body>
 </html>

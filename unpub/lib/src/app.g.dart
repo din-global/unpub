@@ -10,6 +10,11 @@ Router _$AppRouter(App service) {
   final router = Router();
   router.add(
     'GET',
+    r'/api/packages',
+    service.getPackageNames,
+  );
+  router.add(
+    'GET',
     r'/api/packages/<name>',
     service.getVersions,
   );
@@ -87,6 +92,26 @@ Router _$AppRouter(App service) {
     'GET',
     r'/packages/<name>/versions/<version>',
     service.indexHtml,
+  );
+  router.add(
+    'GET',
+    r'/delete',
+    service.flutterHtml,
+  );
+  router.add(
+    'GET',
+    r'/delete/',
+    service.flutterHtml,
+  );
+  router.add(
+    'GET',
+    r'/delete/main.dart.js',
+    service.unpublishJs,
+  );
+  router.add(
+    'GET',
+    r'/delete/flutter.js',
+    service.FlutterJs,
   );
   router.add(
     'GET',
